@@ -26,9 +26,7 @@ def indexconst_and_data(index,fields, start, end, interval):
     for index, ric in enumerate(ric_list):
         while True:
             try:
-                rd.open_session()
-                data = rd.get_history(universe=ric, fields='TR.CLOSEPRICE', interval=interval, start=start, end=end)
-                rd.close_session()
+                data = rd.get_history(universe=ric, fields=['TR.TotalReturn'], interval=interval, start=start, end=end)
                 data_list.append(data)
                 data.columns = [ric]
                 print(ric)
@@ -44,7 +42,7 @@ def indexconst_and_data(index,fields, start, end, interval):
     return const_indices,historical_data_df
     
     
-const_DJA_1995, data_DJA_1995  = indexconst_and_data(index=['0#.DJA(1995-01-01)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry'],start='1995-1-1',end='1995-12-31',interval='daily')
+const_DJA_1995, data_DJA_1995  = indexconst_and_data(index=['0#.SSHI(2010-01-01)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2010-1-1',end='2010-01-31',interval='daily')
 
 
 rd.open_session()
