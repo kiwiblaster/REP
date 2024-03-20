@@ -71,30 +71,32 @@ unique_instruments = pd.DataFrame({'RIC': unique_instruments})
 
 ric_list = unique_instruments['RIC']
 
+def hist(fields,start,end):
+    data_list = []
+    for index, ric in enumerate(ric_list):
+        while True:
+            try:
+                rd.open_session()
+                data = rd.get_history(universe=ric, fields=fields, interval="daily", start=start, end=end)
+                rd.close_session()
+                data_list.append(data)
+                data.columns = [ric]
+                print(ric)
+                print(len(ric_list) - index)
+                break
+            except Exception as e:
+                print(f"Fehler beim Abrufen von {ric}: {str(e)}")
+                time.sleep(1)
+
+    historical_data_df = pd.concat(data_list, axis=1)
+    return historical_data_df
+
+hist_price = hist(fields='TR.CLOSEPRICE',start="01-04-2010",end="12-31-2023")
+
+
 instruments.to_excel('instruments.xlsx', index=False)
-
 ric_list.to_excel('instruments_unique.xlsx', index=False)
-
-data_list = []
-for index, ric in enumerate(ric_list):
-    while True:
-        try:
-            rd.open_session()
-            data = rd.get_history(universe=ric, fields='TR.CLOSEPRICE', interval="daily", start="01-04-2010", end="12-31-2023")
-            rd.close_session()
-            data_list.append(data)
-            data.columns = [ric]
-            print(ric)
-            print(len(ric_list) - index)
-            break
-        except Exception as e:
-            print(f"Fehler beim Abrufen von {ric}: {str(e)}")
-            time.sleep(1)
-
-historical_data_df = pd.concat(data_list, axis=1)
-
-
-
+hist_price.to_excel('instruments_price.xlsx', index=True)
 
 
 
