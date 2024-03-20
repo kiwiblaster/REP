@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 20 08:44:31 2023
+Created on Wed Mar 20 17:23:47 2024
 
 @author: kevinfrank
 """
 
-"Test"
-
-
-# 0#.SSHI    --> SPI SWISS PERFORMANCE...
-# 0#.SPX     --> S&P 500 INDEX
-# 0#.STOXX   --> STOXX EUROPE 600 EUR PRICE...
-
-
 import pandas as pd
 import refinitiv.data as rd
-import time
+import time as time
 
 ereignisse = {
     "Flugverbot Eyjafjallajökull": "2010-04-15",
@@ -54,98 +46,68 @@ ereignisse = {
 }
 
 
-def indexconst_and_data(index,fields, start, end, interval):
-    data_list = []
-    rd.open_session()
-    const_indices = rd.get_data(universe=index, fields=fields)
-    
-    ric_list = const_indices['Instrument']
-   
-    data_list = []
-    volume_data_list = []
-    
-    start_time = time.time()
-    
-    for index, ric in enumerate(ric_list):
-        while True:
-            try:
-                data = rd.get_history(universe=ric, fields=['TR.TotalReturn'], interval=interval, start=start, end=end)
-                data_list.append(data)
-                
-                volume_data = rd.get_history(universe=ric, fields=['TR.Volume'], interval=interval, start=start, end=end)
-                volume_data_list.append(volume_data)
-                
-                
-                data.columns = [ric]
-                print(ric)
-                print(len(ric_list) - index)
-                break
-            except Exception as e:
-                print(f"Fehler beim Abrufen von {ric}: {str(e)}")
-                time.sleep(1)
- 
-    
-    historical_data_df = pd.concat(data_list, axis=1)
-    volume_data_df = pd.concat(volume_data_list, axis=1)
-    
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    rd.close_session()
-    
-    
-    return const_indices,historical_data_df,volume_data_df,duration
 
+indices = {
+    "SPI SWISS PERFORMANCE INDEX": "SSHI",
+    "S&P 500 INDEX": "SPX",
+    "STOXX EUROPE 600 EUR PRICE INDEX": "STOXX"
+}
 
-flugverbot_const_SSHI_2010, flugverbot_return_SSHI_2010,flugverbot_volume_SSHI_2010,flugverbot_duration_SSHI_2010 = indexconst_and_data(index=['0#.SSHI(2010-03-18)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2010-03-18',end='2010-05-13',interval='daily')
-flugverbot_const_SPX_2010, flugverbot_return_SPX_2010,flugverbot_volume_SPX_2010 ,flugverbot_duration_SPX_2010  = indexconst_and_data(index=['0#.SPX(2010-03-18)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2010-03-18',end='2010-05-13',interval='daily')
-flugverbot_const_STOXX_2010, flugverbot_return_STOXX_2010,flugverbot_volume_STOXX_2010 ,flugverbot_duration_STOXX_2010  = indexconst_and_data(index=['0#.STOXX(2010-03-18)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2010-03-18',end='2010-05-13',interval='daily')
+def indexconst_and_data(ereignisse, indices):
+    const_indices = pd.DataFrame(columns=['Date','RIC','GICS Sector Name','Index'])
+    for name, index in indices.items():
+        for event, date in ereignisse.items():
+            const_indices_temp = rd.get_data(universe=f"0#.{index}({date})", fields=["TR.RIC","TR.GICSSector"])
+            const_indices_temp['Date'] = date
+            const_indices_temp['Index'] = index
+            const_indices = const_indices.append(const_indices_temp[['Date','RIC','GICS Sector Name','Index']], ignore_index=True)
+    return const_indices
 
-hamas_const_SSHI_2023, hamas_return_SSHI_2023,hamas_volume_STOXX_2023,hamas_duration_SSHI_2023 = indexconst_and_data(index=['0#.SSHI(2023-09-11)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2023-09-11',end='2023-11-03',interval='daily')
-hamas_const_SPX_2023, hamas_return_SPX_2023,hamas_volume_SPX_2023,hamas_duration_SPX_2023  = indexconst_and_data(index=['0#.SPX(2023-09-11)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2023-09-11',end='2023-11-03',interval='daily')
-hamas_const_STOXX_2023, hamas_return_STOXX_2023,hamas_volume_STOXX_2023 ,hamas_duration_STOXX_2023  = indexconst_and_data(index=['0#.STOXX(2023-09-11)'],fields=["TR.CompanyName", "TR.GICSSector", 'TR.GICSIndustry', "TR.TRBCEconomicSector"],start='2023-09-11',end='2023-11-03',interval='daily')
+instruments = indexconst_and_data(ereignisse,indices)
 
-rd.open_session()
-description = rd.get_data('ABBN.S',['TR.TotalReturn.description','TR.Volume.description',"TR.CompanyName.description", "TR.GICSSector.description", 'TR.GICSIndustry.description', "TR.TRBCEconomicSector.description"])
+unique_instruments = instruments['RIC'].unique()
 
+unique_instruments = pd.DataFrame({'RIC': unique_instruments})
 
-def mising_values(data):
-    
-    values = data.shape[0]*data.shape[1]
-    missing_values = data.isna().sum().sum()
-    calc = round(100-(values - missing_values)/values*100,2)
-    
-    print(calc)
+ric_list = unique_instruments['RIC']
+
+instruments.to_excel('instruments.xlsx', index=False)
+
+ric_list.to_excel('instruments_unique.xlsx', index=False)
+
+data_list = []
+for index, ric in enumerate(ric_list):
+    while True:
+        try:
+            rd.open_session()
+            data = rd.get_history(universe=ric, fields='TR.CLOSEPRICE', interval="daily", start="01-04-2010", end="12-31-2023")
+            rd.close_session()
+            data_list.append(data)
+            data.columns = [ric]
+            print(ric)
+            print(len(ric_list) - index)
+            break
+        except Exception as e:
+            print(f"Fehler beim Abrufen von {ric}: {str(e)}")
+            time.sleep(1)
+
+historical_data_df = pd.concat(data_list, axis=1)
 
 
 
-mising_values(flugverbot_return_SSHI_2010)
-mising_values(flugverbot_return_SPX_2010)
-mising_values(flugverbot_return_STOXX_2010)
-
-mising_values(hamas_return_SSHI_2023)
-mising_values(hamas_return_SPX_2023)
-mising_values(hamas_return_STOXX_2023)
 
 
-excel_file = 'flugverbot_const_SSHI_2010.xlsx'
-flugverbot_const_SSHI_2010.to_excel(excel_file, index=False)
-
-excel_file = 'flugverbot_return_SSHI_2010.xlsx'
-flugverbot_return_SSHI_2010.to_excel(excel_file, index=True)
-
-excel_file = 'flugverbot_volume_SSHI_2010.xlsx'
-flugverbot_volume_SSHI_2010.to_excel(excel_file, index=True)
 
 
-excel_file = 'hamas_const_SSHI_2023.xlsx'
-hamas_const_SSHI_2023.to_excel(excel_file, index=False)
+#data = rd.get_history(universe="ABBN.S", fields=['TR.CLOSEPRICE','TR.CompanyMarketCap','TR.Volume'], interval="daily", start="01-01-2010", end="12-31-2010")
+#data = rd.get_data(universe="ABBN.S", fields='TR.GICSSector')
+#data = rd.get_history(universe=['ABBN.S','ADXN.S'], fields=['TR.CLOSEPRICE','TR.CompanyMarketCap','TR.Volume'], interval="daily", start="01-04-2010", end="01-05-2010")
+#dataframe = pd.DataFrame(columns=['Close Price','Company Market Cap','Volume'])
 
-excel_file = 'hamas_return_SSHI_2023.xlsx'
-hamas_return_SSHI_2023.to_excel(excel_file, index=True)
 
-excel_file = 'hamas_volume_STOXX_2023.xlsx'
-hamas_volume_STOXX_2023.to_excel(excel_file, index=True)
+
+
+
 
 
 
