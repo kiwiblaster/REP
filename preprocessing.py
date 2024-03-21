@@ -92,11 +92,14 @@ def hist(fields,start,end):
     return historical_data_df
 
 hist_price = hist(fields='TR.CLOSEPRICE',start="01-04-2010",end="12-31-2023")
-
+hist_mktcap = hist(fields='TR.CompanyMarketCap',start="01-04-2010",end="12-31-2023")
+hist_volume = hist(fields='TR.Volume',start="01-04-2010",end="12-31-2023")
 
 instruments.to_excel('instruments.xlsx', index=False)
 ric_list.to_excel('instruments_unique.xlsx', index=False)
 hist_price.to_excel('instruments_price.xlsx', index=True)
+hist_mktcap.to_excel('instruments_mktcap.xlsx', index=True)
+hist_volume.to_excel('instruments_volume.xlsx', index=True)
 
 
 
