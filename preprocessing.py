@@ -10,6 +10,9 @@ import pandas as pd
 import refinitiv.data as rd
 import time as time
 
+rd.open_session()
+
+
 ereignisse = {
     "Flugverbot Eyjafjallajökull": "2010-04-15",
     "Arabischer Frühling": "2010-12-17",
@@ -54,13 +57,13 @@ indices = {
 }
 
 def indexconst_and_data(ereignisse, indices):
-    const_indices = pd.DataFrame(columns=['Date','RIC','GICS Sector Name','Index'])
+    const_indices = pd.DataFrame(columns=['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Index'])
     for name, index in indices.items():
         for event, date in ereignisse.items():
-            const_indices_temp = rd.get_data(universe=f"0#.{index}({date})", fields=["TR.RIC","TR.GICSSector"])
+            const_indices_temp = rd.get_data(universe=f"0#.{index}({date})", fields=["TR.RIC","TR.GICSSector","TR.TRBCEconomicSector"])
             const_indices_temp['Date'] = date
             const_indices_temp['Index'] = index
-            const_indices = const_indices.append(const_indices_temp[['Date','RIC','GICS Sector Name','Index']], ignore_index=True)
+            const_indices = const_indices.append(const_indices_temp[['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Index']], ignore_index=True)
     return const_indices
 
 instruments = indexconst_and_data(ereignisse,indices)
@@ -95,22 +98,11 @@ hist_price = hist(fields='TR.CLOSEPRICE',start="01-04-2010",end="12-31-2023")
 hist_mktcap = hist(fields='TR.CompanyMarketCap',start="01-04-2010",end="12-31-2023")
 hist_volume = hist(fields='TR.Volume',start="01-04-2010",end="12-31-2023")
 
-instruments.to_excel('instruments.xlsx', index=False)
+instruments.to_excel('Master.xlsx', index=False)
 ric_list.to_excel('instruments_unique.xlsx', index=False)
 hist_price.to_excel('instruments_price.xlsx', index=True)
 hist_mktcap.to_excel('instruments_mktcap.xlsx', index=True)
 hist_volume.to_excel('instruments_volume.xlsx', index=True)
-
-
-
-
-#data = rd.get_history(universe="ABBN.S", fields=['TR.CLOSEPRICE','TR.CompanyMarketCap','TR.Volume'], interval="daily", start="01-01-2010", end="12-31-2010")
-#data = rd.get_data(universe="ABBN.S", fields='TR.GICSSector')
-#data = rd.get_history(universe=['ABBN.S','ADXN.S'], fields=['TR.CLOSEPRICE','TR.CompanyMarketCap','TR.Volume'], interval="daily", start="01-04-2010", end="01-05-2010")
-#dataframe = pd.DataFrame(columns=['Close Price','Company Market Cap','Volume'])
-
-
-
 
 
 
