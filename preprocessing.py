@@ -57,13 +57,13 @@ indices = {
 }
 
 def indexconst_and_data(ereignisse, indices):
-    const_indices = pd.DataFrame(columns=['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Index'])
+    const_indices = pd.DataFrame(columns=['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Company Common Name','Exchange Name','Index'])
     for name, index in indices.items():
         for event, date in ereignisse.items():
-            const_indices_temp = rd.get_data(universe=f"0#.{index}({date})", fields=["TR.RIC","TR.GICSSector","TR.TRBCEconomicSector"])
+            const_indices_temp = rd.get_data(universe=f"0#.{index}({date})", fields=["TR.RIC","TR.GICSSector","TR.TRBCEconomicSector",'TR.CommonName','TR.ExchangeName'])
             const_indices_temp['Date'] = date
             const_indices_temp['Index'] = index
-            const_indices = const_indices.append(const_indices_temp[['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Index']], ignore_index=True)
+            const_indices = const_indices.append(const_indices_temp[['Date','RIC','GICS Sector Name','TRBC Economic Sector Name','Company Common Name','Exchange Name','Index']], ignore_index=True)
     return const_indices
 
 instruments = indexconst_and_data(ereignisse,indices)
@@ -74,7 +74,7 @@ unique_instruments = pd.DataFrame({'RIC': unique_instruments})
 
 ric_list = unique_instruments['RIC']
 
-def hist(fields,start,end):
+def hist(fields,start,end,ric_list):
     data_list = []
     for index, ric in enumerate(ric_list):
         while True:
@@ -94,20 +94,23 @@ def hist(fields,start,end):
     historical_data_df = pd.concat(data_list, axis=1)
     return historical_data_df
 
-hist_price = hist(fields='TR.CLOSEPRICE',start="01-04-2010",end="12-31-2023")
-hist_mktcap = hist(fields='TR.CompanyMarketCap',start="01-04-2010",end="12-31-2023")
-hist_volume = hist(fields='TR.Volume',start="01-04-2010",end="12-31-2023")
+hist_price = hist(fields='TR.CLOSEPRICE',start="01-04-2010",end="12-31-2023",ric_list=ric_list)
+hist_mktcap = hist(fields='TR.CompanyMarketCap',start="01-04-2010",end="12-31-2023",ric_list=ric_list)
+hist_volume = hist(fields='TR.Volume',start="01-04-2010",end="12-31-2023",ric_list=ric_list)
+
+hist_SSHI = rd.get_history(universe='.SSHI', fields='TR.CLOSEPRICE', interval="daily",start="01-04-2010",end="12-31-2023")
+hist_SPX = rd.get_history(universe='.SPX', fields='TR.PriceClose', interval="daily",start="01-04-2010",end="12-31-2023")
+hist_STOXX = rd.get_history(universe='.STOXX', fields='TR.CLOSEPRICE', interval="daily",start="01-04-2010",end="12-31-2023")
+
+hist_SSHI.rename(columns = {'Close Price':'SSHI'}, inplace = True)
+hist_SPX.rename(columns = {'Price Close':'SPX'}, inplace = True)
+hist_STOXX.rename(columns = {'Close Price':'STOXX'}, inplace = True)
 
 instruments.to_excel('Master.xlsx', index=False)
 ric_list.to_excel('instruments_unique.xlsx', index=False)
 hist_price.to_excel('instruments_price.xlsx', index=True)
 hist_mktcap.to_excel('instruments_mktcap.xlsx', index=True)
 hist_volume.to_excel('instruments_volume.xlsx', index=True)
-
-
-
-
-
-
-
-
+hist_SSHI.to_excel('SSHI_prices.xlsx', index=True)
+hist_SPX.to_excel('SPX_prices.xlsx', index=True)
+hist_STOXX.to_excel('STOXX_prices.xlsx', index=True)
